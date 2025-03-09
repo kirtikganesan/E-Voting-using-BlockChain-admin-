@@ -318,16 +318,16 @@ app.post('/api/check-registration', (req, res) => {
 });
 
 // Update user as registered
-app.post("/api/update-registration", async (req, res) => {
-  const { email, accountAddress } = req.body;
+app.post("/api/update-registration", (req, res) => {
+  const { email, accountAddress, aadharNumber } = req.body;
   
-  if (!email || !accountAddress) {
-    return res.status(400).json({ error: "Email and account address are required" });
+  if (!email || !accountAddress || !aadharNumber) {
+    return res.status(400).json({ error: "Email, account address, and Aadhar number are required" });
   }
 
   try {
-    const sql = "UPDATE registration SET is_registered='yes', account_address = ? WHERE email = ?";
-    const values = [accountAddress, email];
+    const sql = "UPDATE registration SET is_registered='yes', account_address = ?, aadhar_number = ? WHERE email = ?";
+    const values = [accountAddress, aadharNumber, email];
 
     db.query(sql, values, (err, result) => {
       if (err) {
@@ -421,6 +421,33 @@ app.get("/api/election-results", (req, res) => {
   });
 });
 
+app.post('/api/verify-aadhar', (req, res) => {
+  const { aadharNumber } = req.body;
+
+  if (!aadharNumber) {
+    return res.status(400).json({ error: 'Aadhar number is required' });
+  }
+
+  const query = 'SELECT * FROM aadhar_data WHERE aadhar_number = ?';
+  
+  db.query(query, [aadharNumber], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.json({ exists: false });
+    }
+
+    const age = results[0].age;
+    return res.json({ 
+      exists: true, 
+      age: age,
+      isEligible: age >= 18 
+    });
+  });
+});
 
 
 const PORT = process.env.PORT || 5000;
