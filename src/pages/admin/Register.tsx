@@ -105,7 +105,7 @@ export default function Register() {
       });
   
       if (response.data.success) {
-        setModalMessage("The admin account has been registered successfully!");
+        setModalMessage("The voter account has been registered successfully!");
         fetchRegisteredUsers();
       } else {
         setModalMessage("Registration failed. Please try again.");
