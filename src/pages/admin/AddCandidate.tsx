@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 import Layout from '../../components/Layout';
 import contractABI from '../../../build/contracts/Contest.json'
 
-const CONTRACT_ADDRESS = "0x49b22D8232dC04E93177b5ebA67598D01F3Cb7f2"; // Update this with your deployed contract address
+const CONTRACT_ADDRESS = "0x6cEadf33166b097604372E1AE3ae84A51fE7A57D"; // Update this with your deployed contract address
 
 export default function AddCandidate() {
   const [formData, setFormData] = useState({

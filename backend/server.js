@@ -70,27 +70,32 @@ app.post('/api/login', (req, res) => {
 });
 
 // Endpoint to check voter status
-app.get('/api/voter-status', (req, res) => {
-  const email = req.query.email; // Get email from query string
+// Use a single unified voter-status endpoint
+app.get("/api/voter-status", (req, res) => {
+  const email = req.query.email;
+  if (!email) return res.status(400).json({ message: "Email is required." });
 
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required to check voter status' });
-  }
+  const query = "SELECT is_registered, admin_approved, has_Voted FROM registration WHERE email = ?";
 
-  // Check voter status based on email
-  const checkVoterStatusQuery = 'SELECT has_Voted FROM registration WHERE email = ?';
-  db.query(checkVoterStatusQuery, [email], (err, results) => {
+  db.query(query, [email], (err, result) => {
     if (err) {
-      console.error('Error fetching voter status:', err);
-      return res.status(500).json({ error: 'Database error' });
+      console.error("Error fetching voter status:", err);
+      return res.status(500).json({ message: "Database error." });
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'Voter not found' });
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Voter not found." });
     }
 
-    const hasVoted = results[0].has_Voted === 1;
-    res.json({ hasVoted });
+    const { is_registered, admin_approved, has_Voted } = result[0];
+    
+    // Return comprehensive status
+    return res.json({ 
+      status: has_Voted === 1 ? "already_voted" : 
+              (is_registered.trim().toLowerCase() === "no" ? "not_registered" :
+              (admin_approved.trim().toLowerCase() === "no" ? "not_approved" : "eligible")),
+      hasVoted: has_Voted === 1
+    });
   });
 });
 
@@ -109,7 +114,7 @@ app.get('/api/candidates', (req, res) => {
 
 // Vote for a candidate
 app.post('/api/vote', (req, res) => {
-  const { email, candidateId } = req.body;
+  const { email, candidateId, transactionHash } = req.body;
 
   if (!email || !candidateId) {
     return res.status(400).json({ error: 'Email and candidateId are required' });
@@ -131,23 +136,35 @@ app.post('/api/vote', (req, res) => {
       return res.status(400).json({ error: 'You have already voted!' });
     }
 
-    // Cast the vote (increment the vote count for the selected candidate)
-    const voteQuery = 'UPDATE candidates SET votes = votes + 1 WHERE id = ?';
-    db.query(voteQuery, [candidateId], (err) => {
-      if (err) {
-        console.error('Error updating vote count:', err);
-        return res.status(500).json({ error: 'Database error' });
+    // First record the transaction in a transactions table (you'll need to create this table)
+    const recordTxQuery = 'INSERT INTO vote_transactions (email, candidate_id, transaction_hash, timestamp) VALUES (?, ?, ?, NOW())';
+    db.query(recordTxQuery, [email, candidateId, transactionHash], (txErr) => {
+      if (txErr) {
+        console.error('Error recording transaction:', txErr);
+        // Continue with the vote even if transaction recording fails
       }
 
-      // Mark the user as having voted
-      const markVotedQuery = 'UPDATE registration SET has_Voted = 1 WHERE email = ?';
-      db.query(markVotedQuery, [email], (err) => {
+      // Cast the vote (increment the vote count for the selected candidate)
+      const voteQuery = 'UPDATE candidates SET votes = votes + 1 WHERE id = ?';
+      db.query(voteQuery, [candidateId], (err) => {
         if (err) {
-          console.error('Error marking user as voted:', err);
+          console.error('Error updating vote count:', err);
           return res.status(500).json({ error: 'Database error' });
         }
 
-        res.json({ message: 'Vote successfully cast!' });
+        // Mark the user as having voted
+        const markVotedQuery = 'UPDATE registration SET has_Voted = 1 WHERE email = ?';
+        db.query(markVotedQuery, [email], (err) => {
+          if (err) {
+            console.error('Error marking user as voted:', err);
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          res.json({ 
+            message: 'Vote successfully cast!',
+            transactionHash: transactionHash 
+          });
+        });
       });
     });
   });
@@ -365,41 +382,6 @@ app.post("/api/register-admin", async (req, res) => {
   }
 });
 
-app.get("/api/voter-status", (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ message: "Email is required." });
-
-  const query = "SELECT is_registered, admin_approved, has_Voted FROM registration WHERE email = ?";
-
-  db.query(query, [email], (err, result) => {
-    if (err) {
-      console.error("Error fetching voter status:", err);
-      return res.status(500).json({ message: "Database error." });
-    }
-
-    if (result.length === 0) {
-      return res.status(404).json({ message: "Voter not found." });
-    }
-
-    const { is_registered, admin_approved, has_Voted } = result[0];
-
-    // Explicitly check conditions
-    if (is_registered.trim().toLowerCase() === "no") {
-      return res.json({ status: "not_registered" });
-    }
-
-    if (admin_approved.trim().toLowerCase() === "no") {
-      return res.json({ status: "not_approved" });
-    }
-
-    if (has_Voted === 1) {
-      return res.json({ status: "already_voted" });
-    }
-
-    // User is eligible to vote
-    return res.json({ status: "eligible" });
-  });
-});
 
 app.get("/api/election-results", (req, res) => {
   // First, check if the election phase is "results"

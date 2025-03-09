@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import { ethers } from "ethers";
+import axios from "axios"; // Added import for axios
 import contractABI from "../../../build/contracts/Contest.json";
 
-const CONTRACT_ADDRESS = "0x49b22D8232dC04E93177b5ebA67598D01F3Cb7f2"; // Replace with deployed contract address
+const CONTRACT_ADDRESS = "0x6cEadf33166b097604372E1AE3ae84A51fE7A57D"; // Replace with deployed contract address
 
 type ElectionState = "registration" | "voting" | "results";
 
@@ -49,6 +50,7 @@ export default function ChangeState() {
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [adminAddress, setAdminAddress] = useState<string | null>(null);
   const [isChangingPhase, setIsChangingPhase] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchElectionData() {
@@ -96,6 +98,8 @@ export default function ChangeState() {
   const handleConfirmStateChange = async () => {
     if (!pendingState || !window.ethereum) return;
     setIsChangingPhase(true);
+    setStatusMessage("Initiating blockchain transaction...");
+    
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -107,17 +111,43 @@ export default function ChangeState() {
         results: 2,
       };
       
-      const tx = await contract.changePhase(phaseMapping[pendingState]); // ✅ Pass phase argument
+      setStatusMessage("Please confirm the transaction in your wallet...");
+      const tx = await contract.changePhase(phaseMapping[pendingState]);
+      
+      setStatusMessage("Transaction submitted. Waiting for confirmation...");
       await tx.wait();
-       // Wait for transaction confirmation
 
-      setCurrentState(pendingState);
+      // After blockchain transaction is successful, update the database
+      setStatusMessage("Updating database...");
+      try {
+        const response = await axios.post("/api/election-phase", {
+          phase: pendingState
+        });
+        
+        if (response.status === 200) {
+          setStatusMessage("Phase updated successfully both on blockchain and in database!");
+          setCurrentState(pendingState);
+        } else {
+          setStatusMessage("Warning: Blockchain updated but database update may have failed.");
+        }
+      } catch (dbError) {
+        console.error("Database update error:", dbError);
+        setStatusMessage("Warning: Phase changed on blockchain, but database update failed.");
+        // Still update the UI state since the blockchain change was successful
+        setCurrentState(pendingState);
+      }
     } catch (error) {
       console.error("Error changing phase:", error);
+      setStatusMessage("Transaction failed. Please try again.");
     } finally {
       setPendingState(null);
       setShowConfirmModal(false);
       setIsChangingPhase(false);
+      
+      // Clear status message after 5 seconds
+      setTimeout(() => {
+        setStatusMessage(null);
+      }, 5000);
     }
   };
 
@@ -126,10 +156,14 @@ export default function ChangeState() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Change Election State</h1>
 
+        {statusMessage && (
+          <div className="bg-blue-100 text-blue-700 p-4 rounded-md mb-6">
+            {statusMessage}
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow p-6">
-          {loading ? (
-            <p className="text-gray-600">Loading...</p>
-          ) : (
+          
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4">
@@ -164,7 +198,7 @@ export default function ChangeState() {
                 </p>
               </div>
             </div>
-          )}
+          
         </div>
 
         <ConfirmModal

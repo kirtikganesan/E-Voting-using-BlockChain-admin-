@@ -1,4 +1,6 @@
 export interface Candidate {
+  contractId: any;
+  notInContract: any;
   id: number;
   name: string;
   age: number;
