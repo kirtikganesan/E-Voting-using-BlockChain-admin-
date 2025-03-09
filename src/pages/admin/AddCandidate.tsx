@@ -3,8 +3,9 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 import Layout from '../../components/Layout';
 import contractABI from '../../../build/contracts/Contest.json'
+import contractAddress from '../../contract';
 
-const CONTRACT_ADDRESS = "0x6cEadf33166b097604372E1AE3ae84A51fE7A57D"; // Update this with your deployed contract address
+const CONTRACT_ADDRESS = contractAddress; // Update this with your deployed contract address
 
 export default function AddCandidate() {
   const [formData, setFormData] = useState({

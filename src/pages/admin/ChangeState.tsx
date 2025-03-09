@@ -3,8 +3,9 @@ import Layout from "../../components/Layout";
 import { ethers } from "ethers";
 import axios from "axios"; // Added import for axios
 import contractABI from "../../../build/contracts/Contest.json";
+import contractAddress from "../../contract";
 
-const CONTRACT_ADDRESS = "0x6cEadf33166b097604372E1AE3ae84A51fE7A57D"; // Replace with deployed contract address
+const CONTRACT_ADDRESS = contractAddress; // Replace with deployed contract address
 
 type ElectionState = "registration" | "voting" | "results";
 

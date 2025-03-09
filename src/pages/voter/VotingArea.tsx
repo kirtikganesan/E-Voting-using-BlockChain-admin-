@@ -4,8 +4,9 @@ import Layout from "../../components/Layout";
 import { Candidate } from "../../types";
 import { ethers } from "ethers";
 import contractABI from "../../../build/contracts/Contest.json";
+import contractAddress from "../../contract";
 
-const CONTRACT_ADDRESS = "0x6cEadf33166b097604372E1AE3ae84A51fE7A57D"; // Updated to match your actual contract address
+const CONTRACT_ADDRESS = contractAddress; // Updated to match your actual contract address
 
 type ElectionPhase = "registration" | "voting" | "results";
 type ContractWithFunctions = ethers.Contract & {
