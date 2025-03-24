@@ -9,7 +9,7 @@ export default function Register() {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [registeredUsers, setRegisteredUsers] = useState<
-    { account_address: string; is_registered: string }[]
+    { account_address: string; is_registered: string; admin_approved: string }[]
   >([]);
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function Register() {
               type="submit"
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Register (Admin Pays Fee)
+              Register Voter Account
             </button>
           </form>
         </div>
@@ -184,6 +184,8 @@ export default function Register() {
                 <tr className="bg-gray-100">
                   <th className="border border-gray-300 px-4 py-2 text-left">Account Address</th>
                   <th className="border border-gray-300 px-4 py-2 text-left">Registered</th>
+                  <th className="border border-gray-300 px-4 py-2 text-left">Admin Approved</th>
+
                 </tr>
               </thead>
               <tbody>
@@ -193,6 +195,9 @@ export default function Register() {
                       <td className="border border-gray-300 px-4 py-2">{user.account_address}</td>
                       <td className="border border-gray-300 px-4 py-2">
                         {user.is_registered === "yes" ? "✅ Yes" : "❌ No"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {user.admin_approved === "yes" ? "✅ Yes" : "❌ No"}
                       </td>
                     </tr>
                   ))

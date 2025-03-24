@@ -298,7 +298,6 @@ export default function VotingArea() {
                       <p>Age: {candidate.age}</p>
                       <p>Qualification: {candidate.qualification}</p>
                       <p>Party: {candidate.party}</p>
-                      <p>Votes: {candidate.votes}</p>
                     </div>
                   </div>
                   <div className="flex flex-col space-y-2">

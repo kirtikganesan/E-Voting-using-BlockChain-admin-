@@ -344,7 +344,7 @@ app.post("/api/update-registration", (req, res) => {
 
 app.get("/api/registered-users", async (req, res) => {
   try {
-    const sql = "SELECT account_address, is_registered FROM registration WHERE is_registered = 'yes'";
+    const sql = "SELECT account_address, is_registered, admin_approved FROM registration WHERE is_registered = 'yes'";
     const [rows] = await db.promise().query(sql);
 
     console.log("Fetched Users:", rows); // Debugging line
